@@ -227,7 +227,7 @@ class HistStack(object):
         self.leg_names = {}
         self.leg_options = {}
 
-    def add_hist(self, hist, name, leg_option = "LF", leg_name = None):
+    def add_hist(self, hist, name, leg_option = "", leg_name = None):
         '''Add a histogram to the stack (not assembled yet). Optional different 
            name in legend to key
         '''
@@ -237,7 +237,7 @@ class HistStack(object):
         self.hists[name] = hist
         self.leg_names[name] = leg_name
         self.leg_options[name] = leg_option
-        
+
     def build(self):
         '''Piece it together
         '''
