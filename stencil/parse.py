@@ -1,6 +1,5 @@
 ''' A parser that knows the arguments needed to construct a given class by 
-    name. At the moment assumes they all have defaults. To upgrate just drop 
-    the leading args. If for some bizarre reason you tried it with built ins, 
+    name. If for some bizarre reason you tried it with built ins, 
     it won't work - unless you're on pypy. Then it might
 ''' 
 
@@ -8,13 +7,16 @@ import inspect
 from argparse import ArgumentParser
 
 def read_args(function):
-    '''Returns a list of argument names for a function, their 
-       defaults and types. Ignore self for method calls
+    '''Returns a list of kwargument names for a function, their 
+       defaults and types
     '''
     args_spec = inspect.getargspec(function)
     names = [x for x in args_spec[0] if x != "self"]
     defaults = args_spec[3]
     types = [type(x) for x in args_spec[3]]
+
+    # trim away the ordinary args (including possibly self)
+    names = names[len(names) - len(defaults):]
     return names, defaults, types
 
 class ConstructorParser(object):
