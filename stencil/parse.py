@@ -8,11 +8,14 @@ import inspect
 from argparse import ArgumentParser
 
 def read_args(function):
-    '''Returns a list of argument names for the function, their 
-       defaults and types
+    '''Returns a list of argument names for a function, their 
+       defaults and types. Ignore self for method calls
     '''
     args_spec = inspect.getargspec(function)
-    return args_spec[0] , args_spec[3], [type(x) for x in args_spec[3]]
+    names = [x for x in args_spec[0] if x != "self"]
+    defaults = args_spec[3]
+    types = [type(x) for x in args_spec[3]]
+    return names, defaults, types
 
 class ConstructorParser(object):
     """Just an argparse with a bunch of built in params that are returned
@@ -37,8 +40,6 @@ class ConstructorParser(object):
            to this parser
         '''
         for arg, deft, typ in zip(*read_args(self.cls.__init__)):
-            if arg == "self":
-                continue
             self.add_argument("--{0}".format(arg), default = deft, type = typ)
             self.construct_args.append(arg)
             
