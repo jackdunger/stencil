@@ -1,6 +1,7 @@
 ''' Tools for putting ROOT objects onto canvas
 '''
 import ROOT
+import stencil.rio as rio
 
 def default_colors():
     '''Return a basic list of colors for ROOT plots
@@ -29,10 +30,10 @@ def get_method_results(obj_list, method_name):
 class PlotOverlay(object):
     '''Class for overlaying root objects onto canvas with an (optional) legend
     '''
-    def __init__(self, draw_legend = True, canvas = None, 
+    def __init__(self, no_legend = False, canvas = None, 
                  auto_scale_x = True, auto_scale_y = True, auto_scale_max = True,
                  colors = None, leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
-                 log_y = False, add_fill = False
+                 log_y = False, add_fill = False, x_title = "xaxis", y_title = "yxais", title = "title"
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
         to display all hists and the legend is drawn in the top right corner
@@ -41,14 +42,14 @@ class PlotOverlay(object):
         self.draw_opts        = {}
         self.colors           = colors 
         self.legend           = ROOT.TLegend(*leg_pos)
-        self.draw_legend      = draw_legend
+        self.no_legend        = no_legend
         self.canvas           = canvas
         self.auto_scale_x     = auto_scale_x
         self.auto_scale_y     = auto_scale_y
         self.auto_scale_max   = auto_scale_max
-        self.x_title          = "xaxis"
-        self.y_title          = "yaxis"
-        self.title            = "title"
+        self.x_title          = x_title
+        self.y_title          = y_title
+        self.title            = title
         self.log_y            = log_y
         self.log_x            = log_x
         self.add_fill         = add_fill
@@ -189,14 +190,14 @@ class PlotOverlay(object):
                 mtd(self.colors[i%len(self.colors)])
                 
 
-            if self.add_fill is True:
-                for i, mtd in enumerate(get_attribute_refs(self.obs.values(), "SetFillColor")):
-                    mtd(self.colors[i%len(self.colors)])
-    
+        if self.add_fill is True:
+            for fl, ln in zip((get_attribute_refs(self.obs.values(), "SetFillColor")), get_method_results(self.obs.values(), "GetLineColor")):
+                fl(ln)
+
         self.set_x_titles(self.x_title)
         self.set_y_titles(self.y_title)        
         self.set_titles(self.title)
-        if self.draw_legend:
+        if not self.no_legend:
             self.legend.Draw("same")    
 
         if self.log_x is True:
@@ -247,3 +248,18 @@ class HistStack(object):
             hist.SetFillColor(self.colors[i%len(self.colors)])
             self.thstack.Add(hist)
         return self.thstack
+
+
+def plot_single_obj(filename, key_name = None, options_dict = None, 
+                    draw_opt = ""):
+    '''Make a canvas with a single histogram from disk, defaults to first 
+       key if no arg given
+    '''
+    if options_dict is None:
+        options_dict = {}
+    obj = rio.grab_obj(filename, key_name)
+    overlay = PlotOverlay(**options_dict)
+    overlay.add_obj(obj, "h", draw_opt)
+    return overlay.draw()
+
+

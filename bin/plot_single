@@ -1,0 +1,27 @@
+#!/usr/bin/python
+import stencil.plot as plt
+import stencil.rio as rio
+from  stencil.parse import ConstructorParser
+
+# read arguments for PlotOverlay Constructor
+parser = ConstructorParser(plt.PlotOverlay)
+parser.add_argument("filename", type=str)
+parser.add_argument("--objname", type=str)
+parser.add_argument("--outfile", type=str, default = "")
+parser.add_argument("--draw_opt", type=str, default = "")
+
+contr_d, other_d = parser.parse_args()
+
+outfile = other_d["outfile"]
+filename = other_d["filename"]
+objname = other_d["objname"]
+draw_opt = other_d["draw_opt"]
+if outfile == "":
+    outfile = "can_" + filename
+
+po = plt.PlotOverlay(**contr_d)
+po.add_obj(rio.grab_obj(filename, objname), "n",
+           draw_opt)
+can  = po.draw()
+
+can.SaveAs(outfile)

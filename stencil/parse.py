@@ -40,7 +40,10 @@ class ConstructorParser(object):
            to this parser
         '''
         for arg, deft, typ in zip(*read_args(self.cls.__init__)):
-            self.add_argument("--{0}".format(arg), default = deft, type = typ)
+            if typ == bool:
+                self.add_argument("--{0}".format(arg), action = "store_true")
+            else:
+                self.add_argument("--{0}".format(arg), default = deft, type = typ)
             self.construct_args.append(arg)
             
     def parse_args(self):
