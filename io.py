@@ -1,3 +1,6 @@
+'''Functions for manipulating ROOT files with a filename only interface
+'''
+
 import ROOT
 import re
 
