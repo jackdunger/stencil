@@ -8,6 +8,7 @@ import os
 parser = parse.ConstructorParser(plt.PlotOverlay)
 parser.add_argument("--filenames", type=str, nargs="+")
 parser.add_argument("--names", type=str, nargs="+")
+parser.add_argument("--lgnames", type=str, nargs="+")
 parser.add_argument("--objname", type=str, default = None)
 parser.add_argument("--outfile", type=str)
 
@@ -23,12 +24,13 @@ contr_d, other_d, replace_dict = parse.prepare_for_ext(contr_d, other_d,
                                                       ext)
 
 names     = other_d["names"]
+lgnames   = other_d["lgnames"]
 
 po = plt.PlotOverlay(**contr_d)
-hs = plt.HistStack()
+hs = plt.HistStack(contr_d["color_scheme"])
 
-for fn, pn in zip(filenames, names):
-    hs.add_hist(rio.grab_obj(fn, objname), pn)
+for fn, pn, lgn in zip(filenames, names, lgnames):
+    hs.add_hist(rio.grab_obj(fn, objname), pn, lgn)
 
 po.add_stack(hs, "stack")
 can  = po.draw()
