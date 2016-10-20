@@ -3,23 +3,17 @@
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 import stencil.rio as rio
+import stencil.color as color
 
-def default_colors():
-    '''Return a basic list of colors for ROOT plots
+def get_obj_with_attr(obj_list, attr_name):
+    '''Get a ref to obj with attribute <attr_name> 
     '''
-    return [ROOT.kRed, ROOT.kBlue, ROOT.kViolet, ROOT.kOrange, 
-            ROOT.kBlue, ROOT.kBlack, ROOT.kMagenta]
+    return filter(lambda x: hasattr(x, attr_name), obj_list)
 
 def get_attribute_refs(obj_list, attr_name):
     '''Get a ref to the attribute <attr_name> for each object that has one
     ''' 
-    attrs = []
-    for x in obj_list:
-        try:
-            attrs.append(getattr(x, attr_name)) 
-        except AttributeError as e:
-            continue
-    return attrs
+    return [getattr(x, attr_name) for x in get_obj_with_attr(obj_list, attr_name)]
 
 
 def get_method_results(obj_list, method_name):
@@ -28,12 +22,38 @@ def get_method_results(obj_list, method_name):
     attrs = get_attribute_refs(obj_list, method_name)
     return [x.__call__() for x in attrs if callable(x)]
 
+
+
+def apply_color_scheme(obj_dict, color_scheme):
+    '''Look for a color associated with colorable objects name, or fall back to 
+       a backup set
+    '''
+    backup = color.backup_list
+    backup_count = 0
+    for nm, obj in obj_dict.iteritems():
+        try:
+            obj.SetLineColor(color_scheme[nm])        
+        except KeyError: 
+            # no color for this name
+            obj.SetLineColor(backup_list[backup_count % len(backup_list)])
+        except AttributeError:
+            # doesnt have a line..
+            pass
+            
+            
+def apply_fill(obj_dict):
+    '''Take every object with a line color and make that the fill color too
+    '''
+    for fl, ln in zip((get_attribute_refs(obj_dict.values(), "SetFillColor")), get_method_results(obj_dict.values(), "GetLineColor")):
+        fl(ln)
+                
+
 class PlotOverlay(object):
     '''Class for overlaying root objects onto canvas with an (optional) legend
     '''
     def __init__(self, no_legend = False, canvas = None, 
                  auto_scale_x = True, auto_scale_y = True, auto_scale_max = True,
-                 colors = None, leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
+                 color_scheme = "", leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
                  log_y = False, add_fill = False, x_title = "xaxis", y_title = "yxais", title = "title", x_title_offset = 1., y_title_offset = 1., x_title_size = 0.04, y_title_size = 0.04
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
@@ -41,7 +61,6 @@ class PlotOverlay(object):
         '''
         self.obs              = {}
         self.draw_opts        = {}
-        self.colors           = colors 
         self.legend           = ROOT.TLegend(*leg_pos)
         self.no_legend        = no_legend
         self.canvas           = canvas
@@ -59,6 +78,11 @@ class PlotOverlay(object):
 
         self.x_title_size   = x_title_size
         self.y_title_size   = y_title_size
+        
+        if color_scheme != "":
+            self.color_scheme = color.get_color_scheme(color_scheme)
+        else:
+            self.color_scheme = None
 
         if self.canvas is None:
             self.canvas = ROOT.TCanvas()        
@@ -196,20 +220,17 @@ class PlotOverlay(object):
         if self.auto_scale_max:
             self.auto_range_maxima()
 
-        if self.colors is not None:
-            for i, mtd in enumerate(get_attribute_refs(self.obs.values(), "SetLineColor")):
-                mtd(self.colors[i%len(self.colors)])
-                
-
-        if self.add_fill is True:
-            for fl, ln in zip((get_attribute_refs(self.obs.values(), "SetFillColor")), get_method_results(self.obs.values(), "GetLineColor")):
-                fl(ln)
-
         self.set_x_titles()
         self.set_y_titles()
         self.set_titles()
         if not self.no_legend:
             self.legend.Draw("same")    
+
+        if self.color_scheme is not None:
+            apply_color_scheme(self.obs, self.color_scheme)
+
+        if self.add_fill is True:
+            apply_fill(self.obs)
 
         if self.log_x is True:
             self.canvas.SetLogx()
@@ -224,23 +245,25 @@ class PlotOverlay(object):
 class HistStack(object):
     '''Class for overlaying histograms into THStacks
     '''
-    def __init__(self, colors = None):
+    def __init__(self, colors = ""):
         '''Initialise everything. Save references to hists themselves, 
            so we can add them to a 
            legend somewhere else. Saved in dicts so easy to 
            add color/style by name later
         '''
-        self.colors = colors
 
-        if self.colors is None:
-            self.colors = default_colors()
+        self.color_scheme = None
+        if colors != "":
+            self.color_scheme = color.get_color_scheme(colors)
+        else:
+            self.color_scheme = None
         
         self.thstack   =  ROOT.THStack()
         self.hists     = {}
         self.leg_names = {}
         self.leg_options = {}
 
-    def add_hist(self, hist, name, leg_option = "Fx", leg_name = None):
+    def add_hist(self, hist, name, leg_name = None, leg_option = "Fx"):
         '''Add a histogram to the stack (not assembled yet). Optional different 
            name in legend to key
         '''
@@ -255,10 +278,9 @@ class HistStack(object):
         '''Piece it together
         '''
         self.thstack = ROOT.THStack()
+        if self.color_scheme is not None:
+            apply_color_scheme(self.hists, self.color_scheme)
+            apply_fill(self.hists)
         for i, hist in enumerate(self.hists.values()):
-            hist.SetLineColor(self.colors[i%len(self.colors)])
-            hist.SetFillColor(self.colors[i%len(self.colors)])
             self.thstack.Add(hist)
         return self.thstack
-
-
