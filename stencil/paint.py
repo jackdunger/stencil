@@ -1,6 +1,5 @@
 """Tools for writing out ROOT canvases to different formats
 """
-import ROOT
 from string import Template
 import subprocess
 import os
@@ -60,3 +59,12 @@ def save_as_tex_pdf(canvas, outname, replace_dict = None):
     make_standalone(tex_name, st_al_fname)
     compile_standalone(st_al_fname)
     clean_pdflatex_files(outname)
+
+
+def paintit(can, outfile, replace_dict):
+    '''Umbrella method to choose a print option based on ext
+    '''
+    if os.path.splitext(outfile)[1] == ".pdf":
+        save_as_tex_pdf(can, outfile, replace_dict)
+    else:
+        can.SaveAs(outfile)

@@ -1,0 +1,36 @@
+#!/usr/bin/python
+import stencil.plot as plt
+import stencil.rio as rio
+import stencil.parse as parse
+from stencil.paint import paintit
+import os
+# read arguments for PlotOverlay Constructor
+parser = parse.ConstructorParser(plt.PlotOverlay)
+parser.add_argument("--filenames", type=str, nargs="+")
+parser.add_argument("--names", type=str, nargs="+")
+parser.add_argument("--objname", type=str, default = None)
+parser.add_argument("--outfile", type=str)
+
+contr_d, other_d = parser.parse_args()
+
+# Do extension specific manip
+outfile   = other_d["outfile"]
+filenames = other_d["filenames"]
+objname   = other_d["objname"]
+
+ext = os.path.splitext(outfile)[1]
+contr_d, other_d, replace_dict = parse.prepare_for_ext(contr_d, other_d, 
+                                                      ext)
+
+names     = other_d["names"]
+
+po = plt.PlotOverlay(**contr_d)
+hs = plt.HistStack()
+
+for fn, pn in zip(filenames, names):
+    hs.add_hist(rio.grab_obj(fn, objname), pn)
+
+po.add_stack(hs, "stack")
+can  = po.draw()
+paintit(can, outfile, replace_dict)
+               

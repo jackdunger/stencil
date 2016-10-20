@@ -15,6 +15,11 @@ def has_key(filename, key_name):
     '''
     return key_name in get_keys(filename)
 
+def all_have_key(filenames, key_name):
+    '''Is there a key named key_name in every file in the list
+    '''
+    return all(has_key(x, key_name) for x in filenames)
+
 def is_histogram(obj):
     '''Is this object a ROOT histogram? Test the class name against regex
     '''
@@ -49,17 +54,16 @@ def contains_only_hists(filename):
     '''
     return all([is_histogram(x) for x in grab_all_obs(filename)])
 
-def zip_files(filename1, filename2):
-    '''Zip together the objects in file1 and file2 into list of pairs
+def zip_files(filenames):
+    '''Zip together the objects in filenames into list of lists
     '''
-    obs1 = grab_all_obs(filename1)
-    obs2 = grab_all_obs(filename2)
-    common_len = min(len(obs1), len(obs2))
-    return [(obs1[i], obs2[i]) for i in xrange(common_len)]
+    obs_list = [grab_all_obs(x) for x in filenames]
+    common_len = min(obs_list)
+    return [[x[i] for x in obs_list ] for i in xrange(common_len)]
 
-def get_common_obs(filename1, filename2):
-    '''Zip together all the objects in file1 with objects of matching name in filename 2
+def get_common_obs(filenames):
+    '''Zip together all the objects in filename list with same name
     '''    
-    shared_keys = get_keys(filename1)
-    shared_keys = [x for x in shared_keys if has_key(filename2, x)]
-    return [(grab_obj(filename1, x), grab_obj(filename2, x)) for x in shared_keys]
+    shared_keys = get_keys(filenames[0])
+    shared_keys = [x for x in shared_keys if all_have_key(filenames, x)]
+    return [[grab_obj(fn, kn) for fn in filenames] for kn in shared_keys]

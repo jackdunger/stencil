@@ -1,6 +1,7 @@
 ''' Tools for putting ROOT objects onto canvas
 '''
 import ROOT
+ROOT.PyConfig.IgnoreCommandLineOptions = True
 import stencil.rio as rio
 
 def default_colors():
@@ -33,7 +34,7 @@ class PlotOverlay(object):
     def __init__(self, no_legend = False, canvas = None, 
                  auto_scale_x = True, auto_scale_y = True, auto_scale_max = True,
                  colors = None, leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
-                 log_y = False, add_fill = False, x_title = "xaxis", y_title = "yxais", title = "title"
+                 log_y = False, add_fill = False, x_title = "xaxis", y_title = "yxais", title = "title", x_title_offset = 1., y_title_offset = 1., x_title_size = 0.04, y_title_size = 0.04
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
         to display all hists and the legend is drawn in the top right corner
@@ -53,6 +54,12 @@ class PlotOverlay(object):
         self.log_y            = log_y
         self.log_x            = log_x
         self.add_fill         = add_fill
+        self.x_title_offset   = x_title_offset
+        self.y_title_offset   = y_title_offset
+
+        self.x_title_size   = x_title_size
+        self.y_title_size   = y_title_size
+
         if self.canvas is None:
             self.canvas = ROOT.TCanvas()        
 
@@ -75,23 +82,27 @@ class PlotOverlay(object):
         for n, h, o in zip(stack.leg_names.values(), stack.hists.values(), stack.leg_options.values()):
             self.legend.AddEntry(h, n, o)
 
-    def set_titles(self, title):
+    def set_titles(self):
         '''Set the title for everything with a title
         '''
         for x in get_attribute_refs(self.obs.values(), "SetTitle"):
-            x(title)
+            x(self.title)
 
-    def set_x_titles(self, title):
+    def set_x_titles(self):
         '''Set the x title for everything with x axis
         '''
         for x in get_method_results(self.obs.values(), "GetXaxis"):
-            x.SetTitle(title)
+            x.SetTitle(self.x_title)
+            x.SetTitleOffset(self.x_title_offset)
+            x.SetTitleSize(self.x_title_size)
 
-    def set_y_titles(self, title):
+    def set_y_titles(self):
         '''Set the y title for everything with x axis
         '''
         for y in get_method_results(self.obs.values(), "GetYaxis"):
-            y.SetTitle(title)
+            y.SetTitle(self.y_title)
+            y.SetTitleOffset(self.y_title_offset)
+            y.SetTitleSize(self.y_title_size)
 
     def set_x_range(self, low, high):
         '''Set the x-axis range of all relevant objects at once
@@ -194,9 +205,9 @@ class PlotOverlay(object):
             for fl, ln in zip((get_attribute_refs(self.obs.values(), "SetFillColor")), get_method_results(self.obs.values(), "GetLineColor")):
                 fl(ln)
 
-        self.set_x_titles(self.x_title)
-        self.set_y_titles(self.y_title)        
-        self.set_titles(self.title)
+        self.set_x_titles()
+        self.set_y_titles()
+        self.set_titles()
         if not self.no_legend:
             self.legend.Draw("same")    
 
@@ -216,7 +227,8 @@ class HistStack(object):
     def __init__(self, colors = None):
         '''Initialise everything. Save references to hists themselves, 
            so we can add them to a 
-           legend somewhere else. Saved in dicts so easy to add color/style by name later
+           legend somewhere else. Saved in dicts so easy to 
+           add color/style by name later
         '''
         self.colors = colors
 
@@ -228,7 +240,7 @@ class HistStack(object):
         self.leg_names = {}
         self.leg_options = {}
 
-    def add_hist(self, hist, name, leg_option = "", leg_name = None):
+    def add_hist(self, hist, name, leg_option = "Fx", leg_name = None):
         '''Add a histogram to the stack (not assembled yet). Optional different 
            name in legend to key
         '''
@@ -248,18 +260,5 @@ class HistStack(object):
             hist.SetFillColor(self.colors[i%len(self.colors)])
             self.thstack.Add(hist)
         return self.thstack
-
-
-def plot_single_obj(filename, key_name = None, options_dict = None, 
-                    draw_opt = ""):
-    '''Make a canvas with a single histogram from disk, defaults to first 
-       key if no arg given
-    '''
-    if options_dict is None:
-        options_dict = {}
-    obj = rio.grab_obj(filename, key_name)
-    overlay = PlotOverlay(**options_dict)
-    overlay.add_obj(obj, "h", draw_opt)
-    return overlay.draw()
 
 

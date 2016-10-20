@@ -1,0 +1,38 @@
+#!/usr/bin/python
+import stencil.plot as plt
+import stencil.rio as rio
+import stencil.parse as parse
+from stencil.paint import paintit
+import os
+# read arguments for PlotOverlay Constructor
+parser = parse.ConstructorParser(plt.PlotOverlay)
+parser.add_argument("filename1", type=str)
+parser.add_argument("filename2", type=str)
+parser.add_argument("name1", type=str)
+parser.add_argument("name2", type=str)
+parser.add_argument("--ext", type=str, default = "png")
+parser.add_argument("--prefix", type=str, default = "")
+parser.add_argument("--draw_opt", type=str, default = "")
+
+contr_d, other_d = parser.parse_args()
+
+prefix    = other_d["prefix"]
+filename1 = other_d["filename1"]
+filename2 = other_d["filename2"]
+draw_opt  = other_d["draw_opt"]
+
+# do extension specific manip
+ext       = other_d["ext"]
+contr_d, other_d, replace_dict = parse.prepare_for_ext(contr_d, other_d, ext)
+
+name1     = other_d["name1"]
+name2     = other_d["name2"]
+
+for x, y in rio.get_common_obs([filename1, filename2]):
+    po = plt.PlotOverlay(**contr_d)
+    po.add_obj(x, name1, draw_opt)
+    po.add_obj(y, name2, draw_opt)
+    can  = po.draw()
+    
+    paintit(can, "{0}{1}.{2}".format(prefix, x.GetName(), ext), replace_dict)
+               
