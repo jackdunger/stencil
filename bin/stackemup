@@ -27,7 +27,7 @@ names     = other_d["names"]
 lgnames   = other_d["lgnames"]
 
 po = plt.PlotOverlay(**contr_d)
-hs = plt.HistStack(contr_d["color_scheme"])
+hs = plt.HistStack(contr_d)
 
 for fn, pn, lgn in zip(filenames, names, lgnames):
     hs.add_hist(rio.grab_obj(fn, objname), pn, lgn)

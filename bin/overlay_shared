@@ -10,16 +10,19 @@ parser.add_argument("filename1", type=str)
 parser.add_argument("filename2", type=str)
 parser.add_argument("name1", type=str)
 parser.add_argument("name2", type=str)
+parser.add_argument("--leg_names", type=str, nargs = 2, default = (None, None))
+parser.add_argument("--leg_opt", type=str, nargs = 1, default = "L")
 parser.add_argument("--ext", type=str, default = "png")
 parser.add_argument("--prefix", type=str, default = "")
 parser.add_argument("--draw_opt", type=str, default = "")
-
+parser.add_argument("--stack", action = "store_true")
 contr_d, other_d = parser.parse_args()
 
 prefix    = other_d["prefix"]
 filename1 = other_d["filename1"]
 filename2 = other_d["filename2"]
 draw_opt  = other_d["draw_opt"]
+leg_opt   = other_d["leg_opt"]
 
 # do extension specific manip
 ext       = other_d["ext"]
@@ -27,12 +30,19 @@ contr_d, other_d, replace_dict = parse.prepare_for_ext(contr_d, other_d, ext)
 
 name1     = other_d["name1"]
 name2     = other_d["name2"]
+leg_names = other_d["leg_names"]
 
 for x, y in rio.get_common_obs([filename1, filename2]):
     po = plt.PlotOverlay(**contr_d)
-    po.add_obj(x, name1, draw_opt)
-    po.add_obj(y, name2, draw_opt)
-    can  = po.draw()
-    
+    if other_d["stack"] is True:
+        hs = plt.HistStack(contr_d)
+        hs.add_hist(x, name1, leg_names[0], leg_opt)
+        hs.add_hist(y, name2, leg_names[1], leg_opt)
+        po.add_stack(hs, "stack")
+    else:
+        po.add_obj(x, name1, draw_opt, leg_opt, leg_names[0])
+        po.add_obj(y, name2, draw_opt, leg_opt, leg_names[1])
+
+    can  = po.draw()    
     paintit(can, "{0}{1}.{2}".format(prefix, x.GetName(), ext), replace_dict)
                

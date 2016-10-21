@@ -102,7 +102,7 @@ def make_replace_dict(config, replace_dict):
 def making_pdf(extension):
     '''Are we building a PDF?
     '''
-    return extension == ".pdf"
+    return extension in (".pdf", "pdf")
 
 def prepare_for_ext(cf1, cf2, extension):
     '''Do extension specific manipulation for the plot parameters

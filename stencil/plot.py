@@ -22,13 +22,11 @@ def get_method_results(obj_list, method_name):
     attrs = get_attribute_refs(obj_list, method_name)
     return [x.__call__() for x in attrs if callable(x)]
 
-
-
 def apply_color_scheme(obj_dict, color_scheme):
     '''Look for a color associated with colorable objects name, or fall back to 
        a backup set
     '''
-    backup = color.backup_list
+    backup_list = color.backup_list
     backup_count = 0
     for nm, obj in obj_dict.iteritems():
         try:
@@ -36,6 +34,7 @@ def apply_color_scheme(obj_dict, color_scheme):
         except KeyError: 
             # no color for this name
             obj.SetLineColor(backup_list[backup_count % len(backup_list)])
+            backup_count += 1
         except AttributeError:
             # doesnt have a line..
             pass
@@ -46,6 +45,12 @@ def apply_fill(obj_dict):
     '''
     for fl, ln in zip((get_attribute_refs(obj_dict.values(), "SetFillColor")), get_method_results(obj_dict.values(), "GetLineColor")):
         fl(ln)
+
+def apply_line_style(obj_dict, line_style):
+    '''Optionally override the existing line styles
+    '''
+    for ref in get_attribute_refs(obj_dict.values(), "SetLineStyle"):
+        ref(line_style)
                 
 
 class PlotOverlay(object):
@@ -54,7 +59,9 @@ class PlotOverlay(object):
     def __init__(self, no_legend = False, canvas = None, 
                  auto_scale_x = True, auto_scale_y = True, auto_scale_max = True,
                  color_scheme = "", leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
-                 log_y = False, add_fill = False, x_title = "xaxis", y_title = "yxais", title = "title", x_title_offset = 1., y_title_offset = 1., x_title_size = 0.04, y_title_size = 0.04
+                 log_y = False, add_fill = False, x_title = "xaxis", y_title = "yaxis",
+                 title = "title", x_title_offset = 1., y_title_offset = 1., 
+                 x_title_size = 0.04, y_title_size = 0.04, line_style = -1
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
         to display all hists and the legend is drawn in the top right corner
@@ -78,7 +85,11 @@ class PlotOverlay(object):
 
         self.x_title_size   = x_title_size
         self.y_title_size   = y_title_size
-        
+        if line_style == -1:
+            self.line_style = None
+        else:
+            self.line_style = line_style
+
         if color_scheme != "":
             self.color_scheme = color.get_color_scheme(color_scheme)
         else:
@@ -93,7 +104,7 @@ class PlotOverlay(object):
         if leg_name is None:
             leg_name = name
         self.obs[name] = obj
-        self.legend.AddEntry(obj, name, leg_opt)
+        self.legend.AddEntry(obj, leg_name, leg_opt)
         self.draw_opts[name] = draw_opt
 
     def add_stack(self, stack, name):
@@ -231,6 +242,9 @@ class PlotOverlay(object):
 
         if self.add_fill is True:
             apply_fill(self.obs)
+            
+        if self.line_style is not None:
+            apply_line_style(self.obs, self.line_style)
 
         if self.log_x is True:
             self.canvas.SetLogx()
@@ -245,25 +259,29 @@ class PlotOverlay(object):
 class HistStack(object):
     '''Class for overlaying histograms into THStacks
     '''
-    def __init__(self, colors = ""):
+    def __init__(self, options_dict):
         '''Initialise everything. Save references to hists themselves, 
            so we can add them to a 
            legend somewhere else. Saved in dicts so easy to 
-           add color/style by name later
+           add color/style by name later. Options_dict is the contr arguments to 
+           PlotOverlay. You need a subset of them at this stage
         '''
 
         self.color_scheme = None
-        if colors != "":
-            self.color_scheme = color.get_color_scheme(colors)
+        if options_dict["color_scheme"] != "":
+            self.color_scheme = color.get_color_scheme(options_dict["color_scheme"])
         else:
             self.color_scheme = None
-        
+        self.line_style = None
+        if options_dict["line_style"]:
+            self.line_style = options_dict["line_style"]
+
         self.thstack   =  ROOT.THStack()
         self.hists     = {}
         self.leg_names = {}
         self.leg_options = {}
 
-    def add_hist(self, hist, name, leg_name = None, leg_option = "Fx"):
+    def add_hist(self, hist, name, leg_name = None, leg_option = "F"):
         '''Add a histogram to the stack (not assembled yet). Optional different 
            name in legend to key
         '''
@@ -281,6 +299,10 @@ class HistStack(object):
         if self.color_scheme is not None:
             apply_color_scheme(self.hists, self.color_scheme)
             apply_fill(self.hists)
+
+        if self.line_style is not None:
+            apply_line_style(self.hists, self.line_style)
+
         for i, hist in enumerate(self.hists.values()):
             self.thstack.Add(hist)
         return self.thstack

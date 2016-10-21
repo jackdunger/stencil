@@ -24,7 +24,7 @@ draw_opt = other_d["draw_opt"]
 if outfile == "":
     outfile = "can_" + filename
 
-ext = os.path.splitext()[1]
+ext = os.path.splitext(outfile)[1]
 contr_d, other_d, replace_dict = parse.prepare_for_ext(contr_d, other_d, 
                                                        ext)
 po = plt.PlotOverlay(**contr_d)

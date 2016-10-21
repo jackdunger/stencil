@@ -3,4 +3,5 @@
 #*
 stencil.egg-info
 dist/
+build/
 test/
