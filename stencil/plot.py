@@ -46,6 +46,12 @@ def apply_fill(obj_dict):
     for fl, ln in zip((get_attribute_refs(obj_dict.values(), "SetFillColor")), get_method_results(obj_dict.values(), "GetLineColor")):
         fl(ln)
 
+def normalise(obj_dict):
+    '''Normalise everything we can
+    '''
+    for sm, ing in zip((get_attribute_refs(obj_dict.values(), "Scale")), get_method_results(obj_dict.values(), "Integral")):
+        sm(1./ing)
+
 def apply_line_style(obj_dict, line_style):
     '''Optionally override the existing line styles
     '''
@@ -61,7 +67,8 @@ class PlotOverlay(object):
                  color_scheme = "", leg_pos = (0.7, 0.7, 0.9, 0.9), log_x = False, 
                  log_y = False, add_fill = False, x_title = "xaxis", y_title = "yaxis",
                  title = "title", x_title_offset = 1., y_title_offset = 1., 
-                 x_title_size = 0.04, y_title_size = 0.04, line_style = -1
+                 x_title_size = 0.04, y_title_size = 0.04, line_style = -1,
+                 normalise = False
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
         to display all hists and the legend is drawn in the top right corner
@@ -82,7 +89,7 @@ class PlotOverlay(object):
         self.add_fill         = add_fill
         self.x_title_offset   = x_title_offset
         self.y_title_offset   = y_title_offset
-
+        self.normalise        = normalise
         self.x_title_size   = x_title_size
         self.y_title_size   = y_title_size
         if line_style == -1:
@@ -250,7 +257,9 @@ class PlotOverlay(object):
             self.canvas.SetLogx()
         if self.log_y is True:            
             self.canvas.SetLogy()                    
-
+            
+        if self.normalise is True:
+            normalise(self.obs)
         self.canvas.Update()
         return self.canvas
 
