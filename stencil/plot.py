@@ -57,7 +57,13 @@ def apply_line_style(obj_dict, line_style):
     '''
     for ref in get_attribute_refs(obj_dict.values(), "SetLineStyle"):
         ref(line_style)
-                
+
+def remove_stats(obs):
+    '''remove stats boxes
+    '''
+    for method in get_attribute_refs(obs.values(), "SetStats"):
+        method(ROOT.kFALSE)
+                            
 
 class PlotOverlay(object):
     '''Class for overlaying root objects onto canvas with an (optional) legend
@@ -68,7 +74,7 @@ class PlotOverlay(object):
                  log_y = False, add_fill = False, x_title = "xaxis", y_title = "yaxis",
                  title = "title", x_title_offset = 1., y_title_offset = 1., 
                  x_title_size = 0.04, y_title_size = 0.04, line_style = -1,
-                 normalise = False
+                 normalise = False, no_stats=False
                  ):
         '''Initilise with draw options. By default the legend is drawn, axes are scaled
         to display all hists and the legend is drawn in the top right corner
@@ -90,6 +96,7 @@ class PlotOverlay(object):
         self.x_title_offset   = x_title_offset
         self.y_title_offset   = y_title_offset
         self.normalise        = normalise
+        self.no_stats         = no_stats
         self.x_title_size   = x_title_size
         self.y_title_size   = y_title_size
         if line_style == -1:
@@ -215,6 +222,7 @@ class PlotOverlay(object):
         if maxes != []:
             self.set_maxima(max(maxes))
 
+        
     def draw(self):
         '''Draw the objects on a copy of the canvas, 
            and return it to caller
@@ -243,7 +251,7 @@ class PlotOverlay(object):
         self.set_titles()
         if not self.no_legend:
             self.legend.Draw("same")    
-
+        
         if self.color_scheme is not None:
             apply_color_scheme(self.obs, self.color_scheme)
 
@@ -260,6 +268,10 @@ class PlotOverlay(object):
             
         if self.normalise is True:
             normalise(self.obs)
+
+        if self.no_stats is True:
+            remove_stats(self.obs)
+
         self.canvas.Update()
         return self.canvas
 
