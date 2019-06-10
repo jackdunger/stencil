@@ -6,6 +6,9 @@ import os
 
 standalone_template = Template(r'''
 \documentclass[tikz]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+\usetikzlibrary{plotmarks}
 \begin{document}
 \input{$filename}
 \end{document}
@@ -31,7 +34,7 @@ def make_standalone(tex_file, st_al_fname):
 def compile_standalone(tex_file):
     '''Run pdflatex to get the standalone
     '''
-    return subprocess.check_call("pdflatex {0}".format(tex_file) , shell = True)
+    return subprocess.check_call("pdflatex  -output-directory {0} {1}".format(os.path.dirname(tex_file), tex_file) , shell = True)
 
 
 def clean_pdflatex_files(bs_name):
